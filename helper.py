@@ -1,12 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from skimage.feature import hog
+import matplotlib.image as mpimg
 
 
-def plot_images(imgs, columns=2, figsize=(25, 10)):
+def plot_images(imgs, titles, columns=2, figsize=(25, 10)):
     plt.figure(figsize=figsize)
     for i, img in enumerate(imgs):
         plt.subplot(len(imgs) / columns + 1, columns, i + 1)
+        if len(titles) > 0:
+            plt.title(titles[i])
         plt.imshow(img)
 
 
@@ -23,7 +27,8 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
     return rhist, ghist, bhist, bin_centers, hist_features
 
 
-def bin_spatial(img, color_space='RGB', size=(32, 32)):
+def convert_image_color(img, color_space):
+    feature_img = np.copy(img)
     if color_space != 'RGB':
         if color_space == 'HSV':
             feature_img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
@@ -35,7 +40,35 @@ def bin_spatial(img, color_space='RGB', size=(32, 32)):
             feature_img = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
         elif color_space == 'YCrCb':
             feature_img = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
-    else:
-        feature_img = np.copy(img)
 
+    return feature_img
+
+
+def bin_spatial(img, color_space='RGB', size=(32, 32)):
+    feature_img = convert_image_color(img, color_space=color_space)
     return cv2.resize(feature_img, size).ravel()
+
+
+def get_hog_features(img, orient, pix_per_cell, cell_per_block, visalise=True):
+    return hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
+               cells_per_block=(cell_per_block, cell_per_block),
+               block_norm='L2-Hys',
+               transform_sqrt=False,
+               visualise=visalise,
+               feature_vector=True,
+               )
+
+
+def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
+                     hist_bins=32, hist_range=(0, 256)):
+    features = []
+    for img_path in imgs:
+        img = mpimg.imread(img_path)
+        feature_img = convert_image_color(img, color_space)
+
+        spatial_features = bin_spatial(feature_img, size=spatial_size)
+        _, _, _, _, hist_features = color_hist(feature_img, nbins=hist_bins,
+                                               bins_range=hist_range)
+        features.append(np.concatenate((spatial_features, hist_features)))
+
+    return features
