@@ -69,6 +69,14 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
         spatial_features = bin_spatial(feature_img, size=spatial_size)
         _, _, _, _, hist_features = color_hist(feature_img, nbins=hist_bins,
                                                bins_range=hist_range)
-        features.append(np.concatenate((spatial_features, hist_features)))
+        hog_features = get_hog_features(
+            feature_img[:, :, 0],
+            orient=9, pix_per_cell=8,
+            cell_per_block=2,
+            visalise=False
+        )
+        features.append(np.concatenate(
+            (spatial_features, hist_features, hog_features)
+        ))
 
     return features
