@@ -80,3 +80,41 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
         ))
 
     return features
+
+
+# Sliding windows in images
+def draw_boxes(img, bounding_boxes, color=(0, 0, 255), thick=3):
+    img = np.copy(img)
+    for b_box in bounding_boxes:
+        cv2.rectangle(img, b_box[0], b_box[1], color, thick)
+    return img
+
+
+# A function that takes an image,
+# start and stop positions in both x and y,
+# window size (x and y dimensions),
+# and overlap fraction (for both x and y)
+def slide_window(img, x_start_stop=[0, 0], y_start_stop=[0, 0],
+                 xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
+    x_span = x_start_stop[1] - x_start_stop[0]
+    y_span = y_start_stop[1] - y_start_stop[0]
+    # Compute the number of pixels per step in x/y
+    nx_pix_per_step = np.int(xy_window[0] * (1 - xy_overlap[0]))
+    ny_pix_per_step = np.int(xy_window[1] * (1 - xy_overlap[1]))
+    # Compute the number of windows in x/y
+    nx_buffer = np.int(xy_window[0] * xy_overlap[0])
+    ny_buffer = np.int(xy_window[1] * xy_overlap[1])
+    nx_windows = np.int((x_span - nx_buffer) / nx_pix_per_step)
+    ny_windows = np.int((y_span - ny_buffer) / ny_pix_per_step)
+
+    windows_list = []
+    for ys in range(ny_windows):
+        for xs in range(nx_windows):
+            start_x = xs * nx_pix_per_step + x_start_stop[0]
+            end_x = start_x + xy_window[0]
+            start_y = ys * ny_pix_per_step + y_start_stop[0]
+            end_y = start_y + xy_window[1]
+
+            windows_list.append(((start_x, start_y), (end_x, end_y)))
+
+    return windows_list
